@@ -1,0 +1,269 @@
+#:kivy 1.0.9
+#:import Button kivy.uix.button.Button 
+
+<ScreenButton@Button>
+	size_hint: .4, 1
+
+<TaskBoard>
+	last_tasks: ltask
+	task_open_list: tolist
+	task_finished_list: tflist
+	value_input: vinput
+	title_input: tinput
+	screen_manager: sm
+	full_screen: ftext
+
+	cols: 1
+	ScrollView:
+		do_scroll_x: True
+		do_scroll_y: False
+		size_hint:1, .1
+		GridLayout:
+			
+			rows: 1
+			size_hint: 1.5, 1
+			ScreenButton:
+				background_color: [.5, .3, .9, 1]
+				text: "Last Tasks"
+				state: 'down'
+				on_press: sm.current = self.text;
+				on_touch_up: 
+					if sm.current == self.text: self.state = 'down'
+					else: self.state = 'normal'
+
+
+			ScreenButton:
+				background_color: [.3, .9, .6, 1]
+				text: "Open Tasks"
+				on_press: sm.current = self.text;
+				on_touch_up: 
+					if sm.current == self.text: self.state = 'down'
+					else: self.state = 'normal'
+
+			ScreenButton:
+				background_color: [.6, .4, .4, 1]
+				text: "Closed Tasks"
+				on_press: sm.current = self.text; 
+				on_touch_up: 
+					if sm.current == self.text: self.state = 'down'
+					else: self.state = 'normal'
+
+			ScreenButton:
+				background_color: [.93, .93, 0, 1]
+				text: "Add New"
+				on_press: if sm.current != "Add New": root.origin_screen = sm.current; sm.current = self.text; self.current_task_uuid = "";
+				on_touch_up: 
+					if sm.current == self.text: self.state = 'down'
+					else: self.state = 'normal'
+
+	ScreenManager:
+		size_hint: 1, 1
+		id: sm
+		on_current:
+			if self.current == "Open Tasks": root.load_open_tasks_page()
+			elif self.current == "Closed Tasks": root.load_finished_task_page()
+			elif self.current == "Last Tasks": root.load_last_tasks_page()
+		Screen:
+			name:"Last Tasks"
+			Accordion:
+				orientation:'vertical'
+				size_hint:1, 1
+				id: ltask
+
+		Screen:
+			name: "Open Tasks"
+			ListView:
+				id: tolist
+			    size_hint: 1, 1
+		
+		Screen:
+			name: "Closed Tasks"
+		    ListView:
+		    	id: tflist
+		        size_hint: 1, 1
+
+    	Screen:
+    		name: "Add New"
+    		GridLayout:
+    			cols: 1
+    			TextInput:
+    				id:tinput
+    				multiline: False
+    				size_hint: 1, .1
+    				hint_text: "Write your title task here..."
+	    		TextInput:
+					id: vinput
+					hint_text:"Write your task here..."
+					multiline: True
+					size_hint: 1,.83
+
+				GridLayout:
+					rows: 1
+					size_hint: 1, .07
+					Button:
+						text: 'Cancel'
+						on_press: root.go_back_screen()
+						background_color: [.41, .13, .55, 1]
+
+					Button:
+						text: 'Save'
+						on_press: root.save_task()
+						background_color: [0, .6, .8, 1]
+
+		Screen:
+    		name: "FullScreen"
+			FullScreenLayout:
+    			cols: 1
+    			id: ftext  	
+    			popup: popup.__self__
+
+	    		RstDocument:
+	    			text: self.parent.name + '\n============================================\n' + self.parent.value
+	    			size_hint: 1, .83
+	    			background_color: 1 ,1 ,1 ,1
+    			GridLayout:
+    				rows: 1
+    				size_hint: 1, .05
+		    		CreatedLabel:
+		    			text: '[i]'+ftext.attributes+'[/i]'
+		    			size_hint: .3, 1
+		    			halign: 'left'
+		    			on_text:
+		    				gbutton.attr= ftext.attributes
+		    		CreatedLabel:
+		    			size_hint: .7, 1
+		    			text: '[i] Created at: ' + ftext.date + '[/i]'
+
+	    		Popup:
+	    			id: popup
+	    			title:'Are you sure?'
+	    			on_parent:
+	    				if self.parent == ftext: self.parent.remove_widget(self)
+	    			GridLayout:
+	    				cols: 1
+	    				Label: 
+	    					text:'Are you sure you want to remove this task?'
+	    					size_hint: 1, .8
+	    				GridLayout:
+	    					size_hint: 1, .2
+	    					rows: 1
+	    					Button:
+	    						text: "Yeah, I'm sure!"
+	    						on_release: popup.dismiss(); root.go_delete_task(ftext.unique_id)
+	    					Button:
+	    						text: "No, I'm not."
+	    						on_release: popup.dismiss()
+				GridLayout:
+	    			rows: 1
+	    			size_hint: 1, .07
+	    			id: gbutton
+	    			attr: ""
+	    			btnOpen: btnOpen.__self__
+	    			btnEdit: btnEdit.__self__
+	    			btnClose: btnClose.__self__
+
+    				on_attr:
+    					if self.attr == 'opened': btnOpen.disabled = True;btnEdit.disabled=False;btnClose.disabled=False;
+    					elif self.attr == 'closed': btnEdit.disabled=True; btnClose.disabled=True;btnOpen.disabled = False
+	    			Button:
+	    				text: "<<"
+	    				on_press: root.go_back_screen()
+	    				background_color: [.6, 1, .6, 1]
+	    			Button:
+	    				id: btnEdit
+	    				text: "Edit"
+	    				background_color: [1, .5, 1, 1]
+	    				on_press: root.go_edit_task(ftext.unique_id)
+	    				background_color: [.51, .96, .17, 1]
+	    			Button:
+	    				id:btnClose
+	    				text: "Close it!"
+	    				on_press: root.save_task(ftext.unique_id,'closed',True);
+	    				background_color: [.6, .4, .4, 1]
+	    			Button:
+	    				id:btnOpen
+	    				text: "Open it!"
+	    				on_press: root.save_task(ftext.unique_id,'opened',True);
+	    				background_color: [.3, .9, .6, 1]
+	    			Button:
+	    				text: "Delete"
+	    				on_press: ftext.popup.open()
+	    				background_color: [1, 0, 0, 1]
+<CreatedLabel@Label>
+	markup: True
+	text_size: self.size
+	halign:'right'
+	color: .6, .6, .6, .6
+	canvas.before:
+		Color:
+			rgba: 1, 1, 1, 1
+		Rectangle:
+			size: self.size
+			pos: self.pos
+
+<AccordionTask>
+	title: '[b][i]' + root.name + '[/i][/b]'
+	GridLayout:
+		cols: 1
+
+		RstDocument:
+			text:root.value
+			on_touch_down: root.load_fullscreen_task(root.task_parent)
+			size_hint: 1, .95
+			background_color: 1 ,1 ,1 ,1
+
+		CreatedLabel:
+			text: '[i] Created at: ' + root.date + '[/i]'
+			size_hint: 1, .05
+
+<LabelTask@Label>
+	markup: True
+	text_size: self.size
+	valign: 'top'
+	halign: 'justify'
+
+<ListTask>
+	on_press: root.load_fullscreen_task(root.task_parent)
+	GridLayout:
+		size: self.parent.size
+		pos: self.parent.pos
+		cols: 1
+
+		LabelTask:
+			text: root.name
+			size_hint: 1, .2
+
+		LabelTask:
+			text: root.value
+			size_hint: 1, .6
+
+		LabelTask:
+			text: root.date
+			size_hint: 1, .2
+			valign: 'bottom'
+			halign: 'right'
+
+
+[AccordionItemTitle@Label]:
+    text: ctx.title
+    markup: True
+    canvas.before:
+        Color:
+            rgb: .4, .79, .17, 1
+        BorderImage:
+            source:
+                ctx.item.background_normal \
+                if ctx.item.collapse \
+                else ctx.item.background_selected
+            pos: self.pos
+            size: self.size
+        PushMatrix
+        Translate:
+            xy: self.center_x, self.center_y
+        Rotate:
+            angle: 90 if ctx.item.orientation == 'horizontal' else 0
+            axis: 0, 0, 1
+        Translate:
+            xy: -self.center_x, -self.center_y
+    canvas.after:
+        PopMatrix
